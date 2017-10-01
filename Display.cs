@@ -17,9 +17,11 @@ namespace NetworkBalancer
         bool isBalanced;
         AdjacencyMatrix AdjMat;
         List<List<int>> FaceList;
-        int MatSize = 10;
+        List<double[]> NodeVectors;
+        int MatSize = 20;
         Random rand;
         bool updateFaces;
+        int NodeAttributes = 30;
    
         public Display()
         {
@@ -27,29 +29,36 @@ namespace NetworkBalancer
             iteration = 0;
             rand = new Random();
             isBalanced = false;
+            NodeVectors = new List<double[]>();
             FaceList = new List<List<int>>();
-            AdjMat = new AdjacencyMatrix(MatSize);
+            AdjMat = new AdjacencyMatrix(MatSize, NodeVectors);
             Theta = 2 * Math.PI / MatSize;
             radius = 300;
             updateFaces = true;
 
-            //Randomly fill the Adjacency Array
+            //Randomly fill NodeVectors
+            for(int i = 0; i < MatSize; i++)
+            {
+                double[] temp = new double[NodeAttributes];
+                for(int j = 0; j < NodeAttributes; j++)
+                {
+                    temp[j] = 2 * rand.NextDouble()- 1;
+                }
+                NodeVectors.Add(temp);
+            }
+
+            //Fill the Adjacency Array
             for (int i = 0; i < MatSize; i++)
             {
                 for (int j = 0; j < MatSize; j++)
                 {
                     if (j != i)
                     {
-                        double k = rand.NextDouble() * 2 - 1;
+                        double k = Dot(NodeVectors[i], NodeVectors[j]);
                         AdjMat.SetValue(i, j, k);
                     }
                 }
             }
-            //List<Node> NodeList = new List<Node>();
-            //List<Edge> EdgeList = new List<Edge>();
-
-            //generateNodeList(NodeList, AdjMat);
-            //generateEdgeList(EdgeList, AdjMat);
 
             //InitializeComponent();
             this.ClientSize = new Size(600, 600);
@@ -57,7 +66,18 @@ namespace NetworkBalancer
             this.Paint += new PaintEventHandler(Display_Load);
         }
 
+        //Dot product function cuz I couldn't find one
+        public double Dot(double[] a, double[] b)
+        {
+            double sum = 0;
+            for (int i = 0; i < a.Length; i++)
+            {
+                sum += a[i] * b[i];
+            }
+            return sum;
+        }
 
+        //Fills FaceList with triplets of nodes that are all connected
         public void GetFaces()
         {
             FaceList.Clear();
@@ -81,7 +101,6 @@ namespace NetworkBalancer
         }
 
         //check if every set of nodes is in a balanced state
-
         private void iterate()
         {
             if (updateFaces) { GetFaces(); updateFaces = false; }
@@ -90,30 +109,41 @@ namespace NetworkBalancer
                 int i = face[0];
                 int j = face[1];
                 int k = face[2];
-                double val1 = AdjMat.GetValue(i, j);
-                double val2 = AdjMat.GetValue(i, k);
-                double val3 = AdjMat.GetValue(j, k);
 
-                //Console.WriteLine(val1 + " " + val2 + " " + val3 + " " + i + " " + j + " " + k);
-
-                double delta1 = -val2 * val3 * Math.Sin(val1 / Math.PI);
-                val1 += delta1;
-                val2 += -val1 * val3 * Math.Sin(val2 / Math.PI);
-                val3 += -val1 * val2 * Math.Sin(val3 / Math.PI);
-
-                Console.WriteLine(delta1);
-
-                if (Math.Abs(val1) < 0.01) { val1 = 0; updateFaces = true; }
-                if (Math.Abs(val2) < 0.01) { val2 = 0; updateFaces = true; }
-                if (Math.Abs(val3) < 0.01) { val3 = 0; updateFaces = true; }
+                //updates each component of NodeAttributes individually
+                for (int z = 0; z < NodeAttributes; z++)
+                {
+                    //I think this is a good function for what I'm trying to do
+                    NodeVectors[i][z] += -NodeVectors[j][z] * NodeVectors[k][z] * Math.Sin(NodeVectors[i][z] / Math.PI);
+                    NodeVectors[j][z] += -NodeVectors[i][z] * NodeVectors[k][z] * Math.Sin(NodeVectors[j][z] / Math.PI);
+                    NodeVectors[k][z] += -NodeVectors[i][z] * NodeVectors[j][z] * Math.Sin(NodeVectors[k][z] / Math.PI);
 
 
+                    //manually clamping values of each component in (-1, 1)
+                    NodeVectors[i][z] = (NodeVectors[i][z] < -1) ? -1 : (NodeVectors[i][z] > 1) ? 1 : NodeVectors[i][z];
+                    NodeVectors[j][z] = (NodeVectors[j][z] < -1) ? -1 : (NodeVectors[j][z] > 1) ? 1 : NodeVectors[j][z];
+                    NodeVectors[k][z] = (NodeVectors[k][z] < -1) ? -1 : (NodeVectors[k][z] > 1) ? 1 : NodeVectors[k][z];
+                }
+        
+                //Finding dot products
+                double val1 = Dot(NodeVectors[i], NodeVectors[j]);
+                double val2 = Dot(NodeVectors[j], NodeVectors[k]);
+                double val3 = Dot(NodeVectors[i], NodeVectors[k]);
+
+                //If a value is low enough, set it to zero and make sure to update FaceList
+                double threshold = 0.05;
+                if (Math.Abs(val1) < threshold) { val1 = 0; updateFaces = true; }
+                if (Math.Abs(val2) < threshold) { val2 = 0; updateFaces = true; }
+                if (Math.Abs(val3) < threshold) { val3 = 0; updateFaces = true; }
+                
                 if (Double.IsNaN(val1)) Console.WriteLine(val1 + " " + val2 + " " + val3);
 
+                //clamping the values
                 val1 = (val1 < -1) ? -1 : (val1 > 1) ? 1 : val1;
                 val2 = (val2 < -1) ? -1 : (val2 > 1) ? 1 : val2;
                 val3 = (val3 < -1) ? -1 : (val3 > 1) ? 1 : val3;
 
+                //sending the new info into the matrix
                 AdjMat.SetValue(i, j, val1);
                 AdjMat.SetValue(i, k, val2);
                 AdjMat.SetValue(j, k, val3);
@@ -121,16 +151,18 @@ namespace NetworkBalancer
             }
         }
 
+        //Draws blue circles for Nodes
         private void DrawNode(int x, int y)
         {
             System.Drawing.Pen myPen = new System.Drawing.Pen(System.Drawing.Color.Blue);
             System.Drawing.Graphics formGraphics;
             formGraphics = this.CreateGraphics();
-            formGraphics.DrawEllipse(myPen, new Rectangle(x-5, y-5, 10, 10));
+            formGraphics.DrawEllipse(myPen, new Rectangle(x-5, y-5, 7, 7));
             myPen.Dispose();
             formGraphics.Dispose();
         }
 
+        //Draws lines which are red for negative, green for positive, and opacity proportional to magnitudes
         private void DrawEdge(int node1, int node2, List<Point> NodeList)
         {
             Pen pen;
@@ -138,11 +170,11 @@ namespace NetworkBalancer
             //Console.WriteLine(v);
             if (v > 0)
             {
-                pen = new Pen(Color.FromArgb((int) Math.Abs(150 * v + 50), Color.Green));
+                pen = new Pen(Color.FromArgb((int) Math.Abs(130 * v + 125), Color.Green));
             }
             else if(AdjMat.GetValue(node1, node2) < 0)
             {
-                pen = new Pen(Color.FromArgb((int)Math.Abs(150 * v + 50), Color.Red));
+                pen = new Pen(Color.FromArgb((int)Math.Abs(130 * v + 125), Color.Red));
             }
             else
             {
@@ -151,39 +183,48 @@ namespace NetworkBalancer
 
             Graphics g  = this.CreateGraphics();
             g.DrawLine(pen, NodeList[node1], NodeList[node2]);
-
-
         }
 
+        //Where it actually draws the graph
         private void Display_Load(object sender, PaintEventArgs e)
         {
             this.GetFaces();
             if (isBalanced)
             {
                 this.Text = "True ";
-                //Thread.Sleep(1000);
             }
             else
             {
                 this.Text = "False ";
             }
             this.Text += iteration;
-            iteration++;
             AdjMat.checkIsBalanced(FaceList, ref isBalanced);    
             iterate();
+
+            iteration++;
 
             Graphics g = e.Graphics;
 
             NodeCoordinates = new List<Point>();
 
-            DrawNodes();
-            DrawEdges();
-
-            //Thread.Sleep(100);
-            if (iteration < 200)
+            Console.WriteLine(iteration);
+            if (iteration % 20 == 1)
             {
-                this.Refresh();
+                DrawNodes();
+                DrawEdges();
+                Thread.Sleep(100);
             }
+
+
+            this.Refresh();
+
+            if (isBalanced)
+            {
+                Thread.Sleep(1000);
+                this.Close();
+                System.Environment.Exit(0);
+            }
+
         }
 
         private void Display_Load(object sender, EventArgs e)
@@ -204,6 +245,7 @@ namespace NetworkBalancer
             }
         }
 
+        
         private void DrawEdges()
         {
             for (int i = 0; i < MatSize; i++)
@@ -218,7 +260,7 @@ namespace NetworkBalancer
 
     internal class AdjacencyMatrix
     {
-        public AdjacencyMatrix(int MatSize)
+        public AdjacencyMatrix(int MatSize, List<double[]> NodeVectors)
         {
             size = MatSize;
             if (size % 2 == 1) size--;
