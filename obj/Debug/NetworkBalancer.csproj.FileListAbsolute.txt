@@ -1,0 +1,9 @@
+C:\Users\kevth\source\repos\GraphBalanceApp\NetworkBalancer\obj\Debug\NetworkBalancer.csprojResolveAssemblyReference.cache
+C:\Users\kevth\source\repos\GraphBalanceApp\NetworkBalancer\obj\Debug\NetworkBalancer.csproj.CoreCompileInputs.cache
+C:\Users\kevth\source\repos\GraphBalanceApp\NetworkBalancer\obj\Debug\NetworkBalancer.csproj.GenerateResource.Cache
+C:\Users\kevth\source\repos\GraphBalanceApp\NetworkBalancer\obj\Debug\NetworkBalancer.Display.resources
+C:\Users\kevth\source\repos\GraphBalanceApp\NetworkBalancer\bin\Debug\NetworkBalancer.exe.config
+C:\Users\kevth\source\repos\GraphBalanceApp\NetworkBalancer\bin\Debug\NetworkBalancer.exe
+C:\Users\kevth\source\repos\GraphBalanceApp\NetworkBalancer\bin\Debug\NetworkBalancer.pdb
+C:\Users\kevth\source\repos\GraphBalanceApp\NetworkBalancer\obj\Debug\NetworkBalancer.exe
+C:\Users\kevth\source\repos\GraphBalanceApp\NetworkBalancer\obj\Debug\NetworkBalancer.pdb
