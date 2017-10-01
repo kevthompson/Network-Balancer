@@ -17,8 +17,9 @@ namespace NetworkBalancer
         bool isBalanced;
         AdjacencyMatrix AdjMat;
         List<List<int>> FaceList;
-        int MatSize = 16;
+        int MatSize = 10;
         Random rand;
+        bool updateFaces;
    
         public Display()
         {
@@ -30,6 +31,7 @@ namespace NetworkBalancer
             AdjMat = new AdjacencyMatrix(MatSize);
             Theta = 2 * Math.PI / MatSize;
             radius = 300;
+            updateFaces = true;
 
             //Randomly fill the Adjacency Array
             for (int i = 0; i < MatSize; i++)
@@ -48,7 +50,6 @@ namespace NetworkBalancer
 
             //generateNodeList(NodeList, AdjMat);
             //generateEdgeList(EdgeList, AdjMat);
-            GetFaces();
 
             //InitializeComponent();
             this.ClientSize = new Size(600, 600);
@@ -59,6 +60,7 @@ namespace NetworkBalancer
 
         public void GetFaces()
         {
+            FaceList.Clear();
             for (int i = 0; i < MatSize; i++)
             {
                 for (int j = i + 1; j < MatSize; j++)
@@ -82,6 +84,7 @@ namespace NetworkBalancer
 
         private void iterate()
         {
+            if (updateFaces) { GetFaces(); updateFaces = false; }
             foreach (List<int> face in FaceList)
             {
                 int i = face[0];
@@ -93,11 +96,23 @@ namespace NetworkBalancer
 
                 //Console.WriteLine(val1 + " " + val2 + " " + val3 + " " + i + " " + j + " " + k);
 
-                val1 *= (1 - Math.Pow(val1, 2)) * val2 * val3;
-                val2 *= (1 - Math.Pow(val2, 2)) * val1 * val3;
-                val3 *= (1 - Math.Pow(val3, 2)) * val1 * val2;
+                double delta1 = -val2 * val3 * Math.Sin(val1 / Math.PI);
+                val1 += delta1;
+                val2 += -val1 * val3 * Math.Sin(val2 / Math.PI);
+                val3 += -val1 * val2 * Math.Sin(val3 / Math.PI);
 
-                Console.WriteLine(val1);
+                Console.WriteLine(delta1);
+
+                if (Math.Abs(val1) < 0.01) { val1 = 0; updateFaces = true; }
+                if (Math.Abs(val2) < 0.01) { val2 = 0; updateFaces = true; }
+                if (Math.Abs(val3) < 0.01) { val3 = 0; updateFaces = true; }
+
+
+                if (Double.IsNaN(val1)) Console.WriteLine(val1 + " " + val2 + " " + val3);
+
+                val1 = (val1 < -1) ? -1 : (val1 > 1) ? 1 : val1;
+                val2 = (val2 < -1) ? -1 : (val2 > 1) ? 1 : val2;
+                val3 = (val3 < -1) ? -1 : (val3 > 1) ? 1 : val3;
 
                 AdjMat.SetValue(i, j, val1);
                 AdjMat.SetValue(i, k, val2);
@@ -119,13 +134,15 @@ namespace NetworkBalancer
         private void DrawEdge(int node1, int node2, List<Point> NodeList)
         {
             Pen pen;
-            if(AdjMat.GetValue(node1, node2) > 0)
-            { 
-                pen = new Pen(Color.Green);
+            double v = AdjMat.GetValue(node1, node2);
+            //Console.WriteLine(v);
+            if (v > 0)
+            {
+                pen = new Pen(Color.FromArgb((int) Math.Abs(150 * v + 50), Color.Green));
             }
             else if(AdjMat.GetValue(node1, node2) < 0)
             {
-                pen = new Pen(Color.Red);
+                pen = new Pen(Color.FromArgb((int)Math.Abs(150 * v + 50), Color.Red));
             }
             else
             {
@@ -144,7 +161,7 @@ namespace NetworkBalancer
             if (isBalanced)
             {
                 this.Text = "True ";
-                
+                //Thread.Sleep(1000);
             }
             else
             {
@@ -162,8 +179,8 @@ namespace NetworkBalancer
             DrawNodes();
             DrawEdges();
 
-            Thread.Sleep(1000);
-            if (iteration < 10)
+            //Thread.Sleep(100);
+            if (iteration < 200)
             {
                 this.Refresh();
             }
@@ -209,6 +226,7 @@ namespace NetworkBalancer
             int x;
             int y;
             Random rand = new Random();
+
             for(int i = 0; i < size; i++)
             {
                 for(int j = 0; j < size / 2; j++)
@@ -225,7 +243,7 @@ namespace NetworkBalancer
                             x = size - i - 1;
                             y = size - j - 1;
                         }
-                        if (rand.NextDouble() < 0.1) Mat[x, y] = 0;
+                        if (rand.NextDouble() < 0.05) Mat[x, y] = 0;
                         else Mat[x, y] = 2 * rand.NextDouble() - 1;
                     }
                 }

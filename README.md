@@ -4,10 +4,10 @@ It is a project that simulates a small group of people and their relations
 
 TO-DO:
 
--Make Facelist update when an entry becomes a zero
+-Make FaceList a List<List<double[]>> and use inner products to get values.
 
--Fix algorithm so they don't just go to zero
+-Make a List<double[]> called "NodeVectors"
 
--Make Facelist a List<Point> instead of List<List<Point>>
-  
--git gud
+-FaceList should get vals from NodeVectors and perform operations on each of the vectors, sending the dot products of vectors into the Adjacency Matrix
+
+
